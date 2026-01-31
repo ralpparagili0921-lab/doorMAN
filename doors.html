@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mystery Door Game</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 100%);
+            color: #f1f1f1;
+            min-height: 100vh;
+            padding: 10px;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            padding: 10px 0 15px;
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 5px;
+            background: linear-gradient(to right, #ff6b6b, #ffd166, #06d6a0);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            letter-spacing: 1px;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            color: #a1c6d7;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.4;
+        }
+        
+        /* Top info bar with How to Play and Doors Opened */
+        .top-info-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 15px 0 25px;
+            padding: 15px 25px;
+            background-color: rgba(0, 0, 0, 0.4);
+            border-radius: 10px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .instructions {
+            flex: 1;
+        }
+        
+        .instructions h3 {
+            color: #ffd166;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.1rem;
+        }
+        
+        .instructions p {
+            color: #c2e0f0;
+            font-size: 0.95rem;
+        }
+        
+        .selected-count {
+            text-align: right;
+            font-size: 1.4rem;
+            color: #ffd166;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 12px 25px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 209, 102, 0.3);
+            min-width: 180px;
+        }
+        
+        .selected-count span {
+            font-weight: bold;
+            color: #06d6a0;
+            font-size: 2.2rem;
+            display: block;
+            margin-top: 5px;
+        }
+        
+        /* Full width doors container */
+        .doors-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 30px;
+            flex-wrap: nowrap;
+            width: 100%;
+            min-height: 380px;
+            gap: 2px;
+        }
+        
+        .door-wrapper {
+            position: relative;
+            perspective: 1200px;
+            flex: 1;
+            min-width: 0;
+            height: 340px;
+            transition: transform 0.3s;
+        }
+        
+        .door-wrapper:hover {
+            transform: translateY(-5px);
+        }
+        
+        .door {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transform-style: preserve-3d;
+            transform-origin: left center;
+            transition: transform 1.2s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            cursor: pointer;
+            border-radius: 6px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.6);
+        }
+        
+        .door:hover:not(.locked) {
+            transform: translateY(-10px) rotateY(-5deg);
+        }
+        
+        .door-front, .door-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 6px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        
+        .door-front {
+            background-size: cover;
+            background-position: center;
+            border: 5px solid;
+            border-top-width: 10px;
+            border-bottom-width: 10px;
+        }
+        
+        /* Different door textures */
+        .wood-texture {
+            background-image: 
+                linear-gradient(to bottom, rgba(101, 67, 33, 0.9), rgba(139, 90, 43, 0.9)),
+                url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><path d="M0,0 L100,0 L100,100 L0,100 Z" fill="none" stroke="%235A3921" stroke-width="2"/><path d="M20,0 L20,100" stroke="%235A3921" stroke-width="1.5"/><path d="M40,0 L40,100" stroke="%235A3921" stroke-width="1.5"/><path d="M60,0 L60,100" stroke="%235A3921" stroke-width="1.5"/><path d="M80,0 L80,100" stroke="%235A3921" stroke-width="1.5"/></svg>');
+            border-color: #5A3921 #3D2716 #5A3921 #3D2716;
+        }
+        
+        .marble-texture {
+            background-image: 
+                linear-gradient(135deg, rgba(200, 200, 200, 0.9), rgba(230, 230, 230, 0.9)),
+                url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><ellipse cx="100" cy="100" rx="80" ry="60" fill="%23A0A0A0" opacity="0.2"/><ellipse cx="60" cy="70" rx="40" ry="30" fill="%23808080" opacity="0.3"/><ellipse cx="140" cy="130" rx="50" ry="40" fill="%23C0C0C0" opacity="0.2"/></svg>');
+            border-color: #A0A0A0 #808080 #A0A0A0 #808080;
+        }
+        
+        .steel-texture {
+            background-image: 
+                linear-gradient(135deg, rgba(150, 150, 150, 0.9), rgba(190, 190, 190, 0.9)),
+                url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect x="10" y="10" width="80" height="80" fill="none" stroke="%23606060" stroke-width="3"/><rect x="25" y="25" width="50" height="50" fill="none" stroke="%23606060" stroke-width="2"/></svg>');
+            border-color: #707070 #505050 #707070 #505050;
+        }
+        
+        .glass-texture {
+            background-image: 
+                linear-gradient(135deg, rgba(180, 220, 255, 0.8), rgba(210, 230, 255, 0.8)),
+                url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect x="20" y="20" width="60" height="60" fill="none" stroke="%2390C0FF" stroke-width="2" stroke-dasharray="5,5"/><circle cx="50" cy="50" r="15" fill="none" stroke="%2390C0FF" stroke-width="2"/></svg>');
+            border-color: #90C0FF #70A0FF #90C0FF #70A0FF;
+        }
+        
+        .brick-texture {
+            background-image: 
+                linear-gradient(135deg, rgba(180, 100, 80, 0.9), rgba(200, 120, 100, 0.9)),
+                url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="60" viewBox="0 0 100 60"><rect x="0" y="0" width="50" height="30" fill="none" stroke="%23905040" stroke-width="2"/><rect x="50" y="0" width="50" height="30" fill="none" stroke="%23905040" stroke-width="2"/><rect x="25" y="30" width="50" height="30" fill="none" stroke="%23905040" stroke-width="2"/></svg>');
+            border-color: #905040 #703830 #905040 #703830;
+        }
+        
+        .gold-texture {
+            background-image: 
+                linear-gradient(135deg, rgba(255, 215, 0, 0.8), rgba(255, 235, 100, 0.8)),
+                url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><circle cx="50" cy="50" r="30" fill="none" stroke="%23FFD700" stroke-width="3"/><path d="M30,30 L70,70" stroke="%23FFD700" stroke-width="2"/><path d="M70,30 L30,70" stroke="%23FFD700" stroke-width="2"/></svg>');
+            border-color: #FFD700 #D4AF37 #FFD700 #D4AF37;
+        }
+        
+        .crystal-texture {
+            background-image: 
+                linear-gradient(135deg, rgba(200, 230, 255, 0.7), rgba(230, 245, 255, 0.8)),
+                url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><polygon points="50,10 80,50 50,90 20,50" fill="none" stroke="%23A0D0FF" stroke-width="2"/><polygon points="50,30 65,50 50,70 35,50" fill="none" stroke="%23A0D0FF" stroke-width="2"/></svg>');
+            border-color: #A0D0FF #80B0FF #A0D0FF #80B0FF;
+        }
+        
+        .mystery-texture {
+            background-image: 
+                linear-gradient(135deg, rgba(150, 50, 150, 0.8), rgba(180, 80, 180, 0.8)),
+                url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><path d="M20,50 Q50,10 80,50 T140,50" stroke="%23963096" stroke-width="2" fill="none"/><circle cx="50" cy="50" r="20" fill="none" stroke="%23963096" stroke-width="2"/></svg>');
+            border-color: #963096 #702070 #963096 #702070;
+        }
+        
+        .door-number {
+            font-size: 3.2rem;
+            font-weight: bold;
+            background-color: rgba(0, 0, 0, 0.7);
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 4px solid rgba(255, 255, 255, 0.9);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+            z-index: 5;
+        }
+        
+        /* Door knob */
+        .door-knob {
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            background: radial-gradient(circle at 30% 30%, #FFD700, #B8860B);
+            border-radius: 50%;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 10;
+            box-shadow: 
+                0 0 10px rgba(255, 215, 0, 0.8),
+                inset 2px 2px 5px rgba(255, 255, 255, 0.6),
+                inset -2px -2px 5px rgba(0, 0, 0, 0.6);
+            border: 2px solid #DAA520;
+        }
+        
+        .door-knob::after {
+            content: '';
+            position: absolute;
+            width: 5px;
+            height: 5px;
+            background: #DAA520;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        .door-back {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            transform: rotateY(180deg);
+            justify-content: center;
+            align-items: center;
+            color: white;
+            border: 5px solid #ff6b6b;
+            border-top-width: 10px;
+            border-bottom-width: 10px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .door.locked {
+            cursor: not-allowed;
+        }
+        
+        .door.locked:hover {
+            transform: none;
+        }
+        
+        .door.locked .door-front {
+            filter: grayscale(80%) brightness(0.5);
+        }
+        
+        .door.open {
+            transform: rotateY(-110deg);
+            pointer-events: none;
+        }
+        
+        .locked-label {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background-color: #e74c3c;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            z-index: 10;
+            transform: rotate(10deg);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5);
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 14px 30px;
+            font-size: 1.1rem;
+            background: linear-gradient(to right, #ff6b6b, #ff9a00);
+            border: none;
+            border-radius: 50px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(1px);
+        }
+        
+        button:disabled {
+            background: #555;
+            color: #999;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: #a1c6d7;
+            font-size: 0.85rem;
+        }
+        
+        .redirecting-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.95);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+        
+        .redirecting-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .redirecting-content {
+            text-align: center;
+            color: white;
+            max-width: 500px;
+            padding: 40px;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border-radius: 15px;
+            box-shadow: 0 0 40px rgba(255, 107, 107, 0.5);
+            border: 3px solid #ff6b6b;
+        }
+        
+        .redirecting-content h2 {
+            color: #ffd166;
+            margin-bottom: 20px;
+            font-size: 2.2rem;
+        }
+        
+        .redirecting-content p {
+            margin-bottom: 30px;
+            font-size: 1.2rem;
+            color: #c2e0f0;
+        }
+        
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid rgba(255, 107, 107, 0.3);
+            border-top: 5px solid #ff6b6b;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 30px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @media (max-width: 1200px) {
+            .door-wrapper {
+                height: 300px;
+            }
+            
+            .door-number {
+                font-size: 2.8rem;
+                width: 60px;
+                height: 60px;
+            }
+        }
+        
+        @media (max-width: 992px) {
+            .door-wrapper {
+                height: 260px;
+            }
+            
+            .door-number {
+                font-size: 2.4rem;
+                width: 55px;
+                height: 55px;
+            }
+            
+            .top-info-bar {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            
+            .selected-count {
+                text-align: left;
+                width: 100%;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.2rem;
+            }
+            
+            .subtitle {
+                font-size: 1rem;
+            }
+            
+            .doors-row {
+                flex-wrap: wrap;
+                min-height: auto;
+                gap: 15px;
+            }
+            
+            .door-wrapper {
+                flex: 0 0 calc(50% - 15px);
+                height: 240px;
+            }
+            
+            .door-number {
+                font-size: 2.2rem;
+                width: 50px;
+                height: 50px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .door-wrapper {
+                flex: 0 0 100%;
+                height: 220px;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            button {
+                width: 100%;
+                max-width: 300px;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-door-closed"></i> MYSTERY DOORS</h1>
+            <p class="subtitle">Choose a door to reveal a secret game. Each door can only be opened once.</p>
+        </header>
+        
+        <!-- Top info bar with How to Play and Doors Opened on the same line -->
+        <div class="top-info-bar">
+            <div class="instructions">
+                <h3><i class="fas fa-info-circle"></i> HOW TO PLAY</h3>
+                <p>Click any door to open it. The door will swing open and redirect you to a mystery game. Once opened, a door will be locked forever. Choose wisely!</p>
+            </div>
+            
+            <div class="selected-count">
+                DOORS OPENED
+                <span id="selected-doors-count">0</span> / 8
+            </div>
+        </div>
+        
+        <!-- Full width doors row -->
+        <div class="doors-row" id="doors-row">
+            <!-- Doors will be generated by JavaScript -->
+        </div>
+        
+        <div class="controls">
+            <button id="reset-btn"><i class="fas fa-undo-alt"></i> Reset All Doors</button>
+            <button id="simulate-btn"><i class="fas fa-random"></i> Open Random Door</button>
+        </div>
+        
+        <footer>
+            <p>Mystery Door Challenge &copy; 2023 | Each door hides a unique game experience</p>
+        </footer>
+    </div>
+    
+    <!-- Redirect overlay -->
+    <div class="redirecting-overlay" id="redirect-overlay">
+        <div class="redirecting-content">
+            <div class="spinner"></div>
+            <h2 id="redirect-title">Entering Mystery Game</h2>
+            <p id="redirect-message">Preparing your selected game...</p>
+            <button id="cancel-redirect" style="background: #e74c3c; color: white;">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        // Door data - each door has properties and a link to a game
+        const doorsData = [
+            {
+                id: 1,
+                textureClass: "wood-texture",
+                gameLink: "game1.html"
+            },
+            {
+                id: 2,
+                textureClass: "marble-texture", 
+                gameLink: "game2.html"
+            },
+            {
+                id: 3,
+                textureClass: "steel-texture",
+                gameLink: "game3.html"
+            },
+            {
+                id: 4,
+                textureClass: "glass-texture",
+                gameLink: "game4.html"
+            },
+            {
+                id: 5,
+                textureClass: "brick-texture",
+                gameLink: "game5.html"
+            },
+            {
+                id: 6,
+                textureClass: "gold-texture",
+                gameLink: "game6.html"
+            },
+            {
+                id: 7,
+                textureClass: "crystal-texture",
+                gameLink: "game7.html"
+            },
+            {
+                id: 8,
+                textureClass: "mystery-texture",
+                gameLink: "game8.html"
+            }
+        ];
+
+        // State to track locked doors
+        let lockedDoors = JSON.parse(localStorage.getItem('lockedDoors')) || [];
+        
+        // Initialize the game
+        document.addEventListener('DOMContentLoaded', function() {
+            const doorsRow = document.getElementById('doors-row');
+            const resetBtn = document.getElementById('reset-btn');
+            const simulateBtn = document.getElementById('simulate-btn');
+            const redirectOverlay = document.getElementById('redirect-overlay');
+            const redirectTitle = document.getElementById('redirect-title');
+            const redirectMessage = document.getElementById('redirect-message');
+            const cancelRedirectBtn = document.getElementById('cancel-redirect');
+            
+            let redirectTimeout = null;
+            let currentRedirectDoor = null;
+            
+            // Create and render doors
+            function renderDoors() {
+                doorsRow.innerHTML = '';
+                
+                doorsData.forEach(door => {
+                    const isLocked = lockedDoors.includes(door.id);
+                    
+                    const doorWrapper = document.createElement('div');
+                    doorWrapper.className = 'door-wrapper';
+                    
+                    const doorElement = document.createElement('div');
+                    doorElement.className = `door ${door.textureClass} ${isLocked ? 'locked' : ''}`;
+                    doorElement.dataset.id = door.id;
+                    
+                    // Create front of the door
+                    const doorFront = document.createElement('div');
+                    doorFront.className = 'door-front';
+                    
+                    const doorNumber = document.createElement('div');
+                    doorNumber.className = 'door-number';
+                    doorNumber.textContent = door.id;
+                    
+                    // Create door knob
+                    const doorKnob = document.createElement('div');
+                    doorKnob.className = 'door-knob';
+                    
+                    doorFront.appendChild(doorNumber);
+                    doorFront.appendChild(doorKnob);
+                    
+                    // Create back of the door (shown when opened)
+                    const doorBack = document.createElement('div');
+                    doorBack.className = 'door-back';
+                    
+                    const lockIcon = document.createElement('div');
+                    lockIcon.innerHTML = `<i class="fas fa-lock" style="font-size: 2.5rem; color: #ff6b6b;"></i>`;
+                    
+                    const lockedText = document.createElement('div');
+                    lockedText.innerHTML = `<h3>LOCKED</h3><p>Door ${door.id} is sealed</p>`;
+                    
+                    doorBack.appendChild(lockIcon);
+                    doorBack.appendChild(lockedText);
+                    
+                    doorElement.appendChild(doorFront);
+                    doorElement.appendChild(doorBack);
+                    
+                    // Add locked label if door is locked
+                    if (isLocked) {
+                        const lockedLabel = document.createElement('div');
+                        lockedLabel.className = 'locked-label';
+                        lockedLabel.innerHTML = '<i class="fas fa-lock"></i> LOCKED';
+                        doorElement.appendChild(lockedLabel);
+                    }
+                    
+                    doorWrapper.appendChild(doorElement);
+                    doorsRow.appendChild(doorWrapper);
+                    
+                    // Add click event to door
+                    if (!isLocked) {
+                        doorElement.addEventListener('click', () => selectDoor(door.id));
+                    }
+                });
+                
+                updateSelectedCount();
+            }
+            
+            // Function to handle door selection with swing animation
+            function selectDoor(doorId) {
+                // Find the door element
+                const doorElement = document.querySelector(`.door[data-id="${doorId}"]`);
+                if (!doorElement || doorElement.classList.contains('locked')) return;
+                
+                // Swing open the door
+                doorElement.classList.add('open');
+                
+                // After animation, show redirect overlay
+                setTimeout(() => {
+                    redirectTitle.textContent = `Entering Mystery Game`;
+                    redirectMessage.textContent = `You opened Door ${doorId}. Redirecting to a secret game...`;
+                    redirectOverlay.classList.add('active');
+                    
+                    // Store current redirect door for cancellation
+                    currentRedirectDoor = doorId;
+                    
+                    // Set timeout for actual redirection
+                    redirectTimeout = setTimeout(() => {
+                        // In a real implementation, this would redirect:
+                        // Find the selected door data
+                        const selectedDoor = doorsData.find(door => door.id === doorId);
+                        // window.location.href = selectedDoor.gameLink;
+                        
+                        // For demo purposes, we'll simulate locking the door and closing overlay
+                        completeDoorSelection(doorId);
+                        
+                        // Show completion message
+                        redirectTitle.textContent = "Game Ready";
+                        redirectMessage.textContent = `Door ${doorId} is now locked. You would now be playing a mystery game.`;
+                        
+                        // Close overlay after 2 seconds
+                        setTimeout(() => {
+                            redirectOverlay.classList.remove('active');
+                        }, 2000);
+                        
+                    }, 3000); // 3 second delay before "redirect"
+                }, 1200); // Match door swing animation duration
+            }
+            
+            // Function to complete door selection (lock the door)
+            function completeDoorSelection(doorId) {
+                // Add door to locked doors
+                if (!lockedDoors.includes(doorId)) {
+                    lockedDoors.push(doorId);
+                    localStorage.setItem('lockedDoors', JSON.stringify(lockedDoors));
+                }
+                
+                // Update UI
+                renderDoors();
+            }
+            
+            // Function to reset all doors
+            function resetAllDoors() {
+                // Close any open redirect overlay
+                if (redirectTimeout) {
+                    clearTimeout(redirectTimeout);
+                    redirectOverlay.classList.remove('active');
+                }
+                
+                lockedDoors = [];
+                localStorage.removeItem('lockedDoors');
+                renderDoors();
+                
+                // Show reset confirmation
+                redirectTitle.textContent = "All Doors Reset";
+                redirectMessage.textContent = "All 8 mystery doors have been unlocked and are ready for selection.";
+                redirectOverlay.classList.add('active');
+                
+                setTimeout(() => {
+                    redirectOverlay.classList.remove('active');
+                }, 2000);
+            }
+            
+            // Function to simulate random door selection
+            function simulateGameSelection() {
+                // Find a door that isn't locked
+                const availableDoors = doorsData.filter(door => !lockedDoors.includes(door.id));
+                
+                if (availableDoors.length === 0) {
+                    // Show message that all doors are locked
+                    redirectTitle.textContent = "All Doors Locked";
+                    redirectMessage.textContent = "All mystery doors have been opened. Reset doors to select again.";
+                    redirectOverlay.classList.add('active');
+                    
+                    setTimeout(() => {
+                        redirectOverlay.classList.remove('active');
+                    }, 2000);
+                    return;
+                }
+                
+                // Randomly select an available door
+                const randomIndex = Math.floor(Math.random() * availableDoors.length);
+                const selectedDoor = availableDoors[randomIndex];
+                
+                // Select the door
+                selectDoor(selectedDoor.id);
+            }
+            
+            // Function to cancel redirection
+            function cancelRedirect() {
+                if (redirectTimeout) {
+                    clearTimeout(redirectTimeout);
+                    redirectTimeout = null;
+                }
+                
+                // Reset the door if it hasn't been locked yet
+                if (currentRedirectDoor && !lockedDoors.includes(currentRedirectDoor)) {
+                    const doorElement = document.querySelector(`.door[data-id="${currentRedirectDoor}"]`);
+                    if (doorElement) {
+                        doorElement.classList.remove('open');
+                    }
+                }
+                
+                redirectOverlay.classList.remove('active');
+                currentRedirectDoor = null;
+            }
+            
+            // Function to update selected doors count
+            function updateSelectedCount() {
+                const countElement = document.getElementById('selected-doors-count');
+                countElement.textContent = lockedDoors.length;
+            }
+            
+            // Add event listeners to buttons
+            resetBtn.addEventListener('click', resetAllDoors);
+            simulateBtn.addEventListener('click', simulateGameSelection);
+            cancelRedirectBtn.addEventListener('click', cancelRedirect);
+            
+            // Initial render
+            renderDoors();
+        });
+    </script>
+</body>
+</html>
